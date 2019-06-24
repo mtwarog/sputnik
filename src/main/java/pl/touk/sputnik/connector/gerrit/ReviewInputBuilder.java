@@ -2,6 +2,7 @@ package pl.touk.sputnik.connector.gerrit;
 
 import com.google.common.base.Joiner;
 import com.google.gerrit.extensions.api.changes.ReviewInput;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import pl.touk.sputnik.review.Comment;
@@ -19,7 +20,9 @@ public class ReviewInputBuilder {
         ReviewInput reviewInput = new ReviewInput();
         reviewInput.message = Joiner.on(". ").join(review.getMessages());
         reviewInput.labels = new HashMap<>(review.getScores());
-        reviewInput.tag = tag;
+        if (StringUtils.isNotBlank(tag)) {
+            reviewInput.tag = tag;
+        }
         reviewInput.comments = new HashMap<>();
         for (ReviewFile file : review.getFiles()) {
             List<ReviewInput.CommentInput> comments = new ArrayList<>();
