@@ -10,6 +10,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.jetbrains.annotations.NotNull;
 import pl.touk.sputnik.configuration.CliOption;
 import pl.touk.sputnik.configuration.Configuration;
+import pl.touk.sputnik.configuration.GeneralOption;
 import pl.touk.sputnik.connector.ConnectorDetails;
 import pl.touk.sputnik.connector.http.HttpHelper;
 
@@ -49,10 +50,11 @@ public class GerritFacadeBuilder {
     private GerritPatchset buildGerritPatchset(Configuration configuration) {
         String changeId = configuration.getProperty(CliOption.CHANGE_ID);
         String revisionId = configuration.getProperty(CliOption.REVISION_ID);
+        String tag = configuration.getProperty(GeneralOption.TAG);
 
         notBlank(changeId, "You must provide non blank Gerrit change Id");
         notBlank(revisionId, "You must provide non blank Gerrit revision Id");
 
-        return new GerritPatchset(changeId, revisionId);
+        return new GerritPatchset(changeId, revisionId, tag);
     }
 }

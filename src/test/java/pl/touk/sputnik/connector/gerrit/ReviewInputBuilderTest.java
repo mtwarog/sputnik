@@ -11,15 +11,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class ReviewInputBuilderTest {
 
+    private static final String TAG = "ci";
+
     @Test
     void shouldBuildReviewInput() {
         Configuration config = ConfigurationBuilder.initFromResource("test.properties");
         Review review = ReviewBuilder.buildReview(config);
 
-        ReviewInput reviewInput = new ReviewInputBuilder().toReviewInput(review);
+        ReviewInput reviewInput = new ReviewInputBuilder().toReviewInput(review, TAG);
 
         assertThat(reviewInput.message).isEqualTo("Total 8 violations found");
         assertThat(reviewInput.comments).hasSize(4);
+        assertThat(reviewInput.tag).isEqualTo(TAG);
         assertThat(reviewInput.comments.get("filename1")).hasSize(2);
         assertThat(reviewInput.comments.get("filename1").get(0).message).isEqualTo("test1");
         assertThat(reviewInput.labels.get("Code-Review")).isEqualTo((short) 1);
