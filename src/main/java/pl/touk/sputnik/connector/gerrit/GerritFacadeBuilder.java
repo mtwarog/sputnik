@@ -5,14 +5,17 @@ import com.google.gerrit.extensions.api.GerritApi;
 import com.urswolfer.gerrit.client.rest.GerritAuthData;
 import com.urswolfer.gerrit.client.rest.GerritRestApiFactory;
 import com.urswolfer.gerrit.client.rest.http.HttpClientBuilderExtension;
+
 import lombok.extern.slf4j.Slf4j;
+
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.jetbrains.annotations.NotNull;
 import pl.touk.sputnik.configuration.CliOption;
 import pl.touk.sputnik.configuration.Configuration;
+import pl.touk.sputnik.configuration.GeneralOption;
 import pl.touk.sputnik.connector.ConnectorDetails;
 import pl.touk.sputnik.connector.http.HttpHelper;
-
+import static java.lang.Boolean.parseBoolean;
 import static org.apache.commons.lang3.Validate.notBlank;
 
 @Slf4j
@@ -42,7 +45,9 @@ public class GerritFacadeBuilder {
             }
         });
 
-        return new GerritFacade(gerritApi, gerritPatchset);
+        boolean commentOnlyChangedLines = parseBoolean(configuration.getProperty(GeneralOption.COMMENT_ONLY_CHANGED_LINES));
+        return new GerritFacade(gerritApi, gerritPatchset, commentOnlyChangedLines ? new GerritCommentFilter(gerritApi, gerritPatchset)
+                : CommentFilter.EMPTY_FILTER);
     }
 
     @NotNull

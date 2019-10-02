@@ -1,5 +1,9 @@
 package pl.touk.sputnik.connector.gerrit;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
@@ -13,27 +17,20 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.urswolfer.gerrit.client.rest.http.changes.FileInfoParser;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.touk.sputnik.configuration.Configuration;
 import pl.touk.sputnik.configuration.ConfigurationSetup;
-import pl.touk.sputnik.configuration.GeneralOptionNotSupportedException;
 import pl.touk.sputnik.connector.ConnectorFacade;
 import pl.touk.sputnik.connector.ConnectorFacadeFactory;
 import pl.touk.sputnik.connector.ConnectorType;
 import pl.touk.sputnik.review.ReviewFile;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class GerritFacadeTest {
@@ -41,15 +38,9 @@ class GerritFacadeTest {
     @Mock
     private GerritApi gerritApi;
 
-    private GerritFacade gerritFacade;
-
-    @BeforeEach
-    void setUp() {
-        gerritFacade = new GerritFacade(gerritApi, null);
-    }
-
     @Test
     void shouldNotAllowCommentOnlyChangedLines() {
+        // given
         Configuration config = new ConfigurationSetup().setUp(ImmutableMap.of(
                 "cli.changeId", "abc",
                 "cli.revisionId", "def",
@@ -58,10 +49,8 @@ class GerritFacadeTest {
         ConnectorFacadeFactory connectionFacade = new ConnectorFacadeFactory();
 
         ConnectorFacade gerritFacade = connectionFacade.build(ConnectorType.GERRIT, config);
-        Throwable thrown = catchThrowable(() -> gerritFacade.validate(config));
-
-        assertThat(thrown).isInstanceOf(GeneralOptionNotSupportedException.class).hasMessage(
-                "This connector does not support global.commentOnlyChangedLines");
+        gerritFacade.validate(config);
+        // then Nothing
     }
 
     @Test
@@ -88,7 +77,7 @@ class GerritFacadeTest {
         RevisionApi revisionApi = mock(RevisionApi.class);
         when(changeApi.revision("revisionId")).thenReturn(revisionApi);
         when(revisionApi.files()).thenReturn(fileInfoMap);
-        return new GerritFacade(gerritApi, new GerritPatchset("changeId", "revisionId"));
+        return new GerritFacade(gerritApi, new GerritPatchset("changeId", "revisionId"), mock(CommentFilter.class));
     }
 
 }
