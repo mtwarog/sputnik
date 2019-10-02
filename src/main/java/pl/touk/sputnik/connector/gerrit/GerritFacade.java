@@ -4,9 +4,14 @@ import com.google.gerrit.extensions.api.GerritApi;
 import com.google.gerrit.extensions.api.changes.ReviewInput;
 import com.google.gerrit.extensions.common.FileInfo;
 import lombok.extern.slf4j.Slf4j;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import lombok.AllArgsConstructor;
+
 import org.jetbrains.annotations.NotNull;
 import pl.touk.sputnik.configuration.Configuration;
-import pl.touk.sputnik.configuration.GeneralOption;
 import pl.touk.sputnik.configuration.GeneralOptionNotSupportedException;
 import pl.touk.sputnik.connector.ConnectorFacade;
 import pl.touk.sputnik.connector.ConnectorValidator;
@@ -15,29 +20,24 @@ import pl.touk.sputnik.connector.ReviewPublisher;
 import pl.touk.sputnik.review.Review;
 import pl.touk.sputnik.review.ReviewFile;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 @Slf4j
+@AllArgsConstructor
 public class GerritFacade implements ConnectorFacade, ConnectorValidator, ReviewPublisher {
     private static final String COMMIT_MSG = "/COMMIT_MSG";
 
     private final GerritApi gerritApi;
+
     private final GerritPatchset gerritPatchset;
 
-    public GerritFacade(GerritApi gerritApi, GerritPatchset gerritPatchset) {
-        this.gerritApi = gerritApi;
-        this.gerritPatchset = gerritPatchset;
-    }
+    private final CommentFilter commentFilter;
 
     @NotNull
     @Override
     public List<ReviewFile> listFiles() {
         try {
             List<ReviewFile> files = new ArrayList<ReviewFile>();
-            Map<String, FileInfo> changeFiles = gerritApi.changes()
-                    .id(gerritPatchset.getChangeId()).revision(gerritPatchset.getRevisionId()).files();
+            Map<String, FileInfo> changeFiles = gerritApi.changes().id(gerritPatchset.getChangeId())
+                    .revision(gerritPatchset.getRevisionId()).files();
 
             for (Map.Entry<String, FileInfo> changeFileEntry : changeFiles.entrySet()) {
                 if (COMMIT_MSG.equals(changeFileEntry.getKey())) {
@@ -63,9 +63,8 @@ public class GerritFacade implements ConnectorFacade, ConnectorValidator, Review
     public void publish(@NotNull Review review) {
         try {
             log.debug("Set review in Gerrit: {}", review);
-            ReviewInput reviewInput = new ReviewInputBuilder().toReviewInput(review);
-            gerritApi.changes().id(gerritPatchset.getChangeId()).revision(gerritPatchset.getRevisionId())
-                    .review(reviewInput);
+            ReviewInput reviewInput = new ReviewInputBuilder(commentFilter.init()).toReviewInput(review);
+            gerritApi.changes().id(gerritPatchset.getChangeId()).revision(gerritPatchset.getRevisionId()).review(reviewInput);
         } catch (Throwable e) {
             throw new GerritException("Error when setting review", e);
         }
@@ -78,13 +77,6 @@ public class GerritFacade implements ConnectorFacade, ConnectorValidator, Review
 
     @Override
     public void validate(Configuration configuration) throws GeneralOptionNotSupportedException {
-        boolean commentOnlyChangedLines = Boolean.parseBoolean(configuration
-                .getProperty(GeneralOption.COMMENT_ONLY_CHANGED_LINES));
-
-        if (commentOnlyChangedLines) {
-            throw new GeneralOptionNotSupportedException("This connector does not support "
-                    + GeneralOption.COMMENT_ONLY_CHANGED_LINES.getKey());
-        }
     }
 
     @Override
